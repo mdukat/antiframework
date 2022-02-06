@@ -55,10 +55,10 @@ public class Worker extends Thread{
             // Parse HTTP request
 
             // Read lines
-            String requestLine = in.readLine();
-            while(requestLine.length() != 0){
+            while(!in.ready()){} // Wait for being ready
+            String requestLine = "";
+            while((requestLine = in.readLine()) != null && requestLine.length() != 0){
                 this.requestString += requestLine + "\n";
-                requestLine = in.readLine();
             }
 
             // Find HTTP Path
@@ -76,16 +76,43 @@ public class Worker extends Thread{
 
             // Parse GET arguments
             if(getRequestType().equals("GET") && getRequestPath().contains("?")){
+
                 // Split path from arguments
                 String[] buffer = getRequestPath().split("\\?");
                 this.requestPath = buffer[0];
 
                 // Split multiple arguments
                 buffer = buffer[1].split("&");
+
                 // Move arguments to map
                 for(String arguments : buffer) {
                     String[] arglist = arguments.split("=");
                     this.requestArguments.put(arglist[0], arglist[1]);
+
+                }
+            }
+
+            // Parse POST arguments
+            if(getRequestType().equals("POST")){
+                int length = Integer.parseInt(getHeaderValue("Content-Length"));
+
+                // POST size hard limits here
+                if(length < 100_000 && length > 0) {
+
+                    // Read arguments from buffered input stream
+                    char[] charBuffer = new char[length];
+                    in.read(charBuffer, 0, length);
+
+                    // Split arguments
+                    String argBuffer = String.valueOf(charBuffer);
+                    String[] buffer = argBuffer.split("&");
+
+                    // Move arguments to map
+                    for (String arguments : buffer) {
+                        String[] arglist = arguments.split("=");
+                        this.requestArguments.put(arglist[0], arglist[1]);
+
+                    }
                 }
             }
 
@@ -153,4 +180,5 @@ public class Worker extends Thread{
     public boolean hasArguments(){
         return !this.requestArguments.isEmpty();
     }
+
 }
