@@ -29,6 +29,7 @@ public class Worker extends Thread{
     private String requestString;
     private String requestPath;
     private String requestType;
+    private String requestVersion;
     private Map<String, Function<String, String>> endpointList;
 
     public Worker() {
@@ -61,14 +62,14 @@ public class Worker extends Thread{
             }
 
             // Find HTTP Path
-            // TODO get version group after HTTP
-            Pattern pattern = Pattern.compile("^(?<request>(GET|POST)) (?<path>.+) HTTP/1.1$", Pattern.MULTILINE);
+            Pattern pattern = Pattern.compile("^(?<request>(GET|POST)) (?<path>.+) HTTP/(?<version>[0-9\\.]+)$", Pattern.MULTILINE);
             Matcher matcher = pattern.matcher(this.requestString);
 
             while(matcher.find()){
-                if(matcher.groupCount() == 3) {
+                if(matcher.groupCount() == 4) {
                     this.requestPath = matcher.group("path");
                     this.requestType = matcher.group("request");
+                    this.requestVersion = matcher.group("version");
                     break;
                 }
             }
@@ -94,7 +95,7 @@ public class Worker extends Thread{
                 output = "HTTP/1.1 404 NOT FOUND\n\n";
 
             // Send response
-            out.println(output);
+            out.print(output);
 
             // Close connection
             clientSocket.close();
@@ -116,5 +117,17 @@ public class Worker extends Thread{
             }
         }
         return "";
+    }
+
+    public String getRequestVersion(){
+        return this.requestVersion;
+    }
+
+    public String getRequestPath(){
+        return this.requestPath;
+    }
+
+    public String getRequestType(){
+        return this.requestType;
     }
 }

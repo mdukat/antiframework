@@ -11,6 +11,8 @@ public class ExampleHandler extends Worker {
         super();
         addEndpoint("GET", "/test", this::testEndpoint);
         addEndpoint("GET", "/useragent", this::getUserAgentEndpoint);
+        addEndpoint("GET", "/debug", this::debugEndpoint);
+        addEndpoint("POST", "/debug", this::debugEndpoint);
     }
 
     // Returns static "Test123"
@@ -22,5 +24,14 @@ public class ExampleHandler extends Worker {
     // Returns value from User-Agent HTTP header
     String getUserAgentEndpoint(String input){
         return getHeaderValue("User-Agent");
+    }
+
+    String debugEndpoint(String input){
+        String output = "";
+        output += getHeaderValue("User-Agent") + "\n"
+            + getRequestPath() + "\n"
+            + getRequestType() + "\n"
+            + getRequestVersion() + "\n";
+        return output;
     }
 }
