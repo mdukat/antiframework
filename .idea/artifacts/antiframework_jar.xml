@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="antiframework:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/antiframework_jar</output-path>
+    <root id="archive" name="antiframework.jar">
+      <element id="module-output" name="antiframework" />
+    </root>
+  </artifact>
+</component>
