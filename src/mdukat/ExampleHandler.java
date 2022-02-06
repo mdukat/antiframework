@@ -27,11 +27,16 @@ public class ExampleHandler extends Worker {
     }
 
     String debugEndpoint(String input){
-        String output = "";
-        output += getHeaderValue("User-Agent") + "\n"
-            + getRequestPath() + "\n"
-            + getRequestType() + "\n"
-            + getRequestVersion() + "\n";
+        System.out.println("Called debug endpoint");
+        String output = "Debug endpoint\n";
+        output += "User-Agent: " + getHeaderValue("User-Agent") + "\n"
+            + "Request path: " + getRequestPath() + "\n"
+            + "Request type: " + getRequestType() + "\n"
+            + "HTTP Version: " + getRequestVersion() + "\n";
+
+        if(hasArguments())
+            output += "Has arguments: " + getRequestArguments().toString() + "\n";
+
         return output;
     }
 }

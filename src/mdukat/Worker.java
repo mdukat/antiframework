@@ -23,18 +23,18 @@ String requestType - GET or POST
 
 public class Worker extends Thread{
 
-    private PrintWriter out;
-    private BufferedReader in;
     private Socket clientSocket;
     private String requestString;
     private String requestPath;
     private String requestType;
     private String requestVersion;
+    private Map<String, String> requestArguments;
     private Map<String, Function<String, String>> endpointList;
 
     public Worker() {
         super();
-        endpointList = new HashMap<>();
+        this.endpointList = new HashMap<>();
+        this.requestArguments = new HashMap<>();
     }
 
     public void setClientSocket(Socket clientSocket){
@@ -48,8 +48,8 @@ public class Worker extends Thread{
     public void run(){
         System.out.println("New worker spawned");
         try {
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             this.requestString = new String();
 
             // Parse HTTP request
@@ -74,6 +74,21 @@ public class Worker extends Thread{
                 }
             }
 
+            // Parse GET arguments
+            if(getRequestType().equals("GET") && getRequestPath().contains("?")){
+                // Split path from arguments
+                String[] buffer = getRequestPath().split("\\?");
+                this.requestPath = buffer[0];
+
+                // Split multiple arguments
+                buffer = buffer[1].split("&");
+                // Move arguments to map
+                for(String arguments : buffer) {
+                    String[] arglist = arguments.split("=");
+                    this.requestArguments.put(arglist[0], arglist[1]);
+                }
+            }
+
             // Call user-made handler
             String output = new String();
             try {
@@ -95,7 +110,7 @@ public class Worker extends Thread{
                 output = "HTTP/1.1 404 NOT FOUND\n\n";
 
             // Send response
-            out.print(output);
+            out.println(output);
 
             // Close connection
             clientSocket.close();
@@ -129,5 +144,13 @@ public class Worker extends Thread{
 
     public String getRequestType(){
         return this.requestType;
+    }
+
+    public Map<String, String> getRequestArguments(){
+        return this.requestArguments;
+    }
+
+    public boolean hasArguments(){
+        return !this.requestArguments.isEmpty();
     }
 }
