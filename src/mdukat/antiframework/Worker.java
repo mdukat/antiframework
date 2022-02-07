@@ -1,4 +1,4 @@
-package mdukat;
+package mdukat.antiframework;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

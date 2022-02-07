@@ -1,4 +1,4 @@
-package mdukat;
+package mdukat.antiframework;
 
 public class Main {
 
