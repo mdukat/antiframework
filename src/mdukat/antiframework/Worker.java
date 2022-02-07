@@ -28,8 +28,8 @@ public class Worker extends Thread{
     private String requestPath;
     private String requestType;
     private String requestVersion;
-    private Map<String, String> requestArguments;
-    private Map<String, Function<String, String>> endpointList;
+    private final Map<String, String> requestArguments;
+    private final Map<String, Function<String, String>> endpointList;
 
     public Worker() {
         super();
@@ -50,19 +50,19 @@ public class Worker extends Thread{
         try {
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            this.requestString = new String();
+            this.requestString = "";
 
             // Parse HTTP request
 
             // Read lines
             while(!in.ready()){} // Wait for being ready
-            String requestLine = "";
+            String requestLine;
             while((requestLine = in.readLine()) != null && requestLine.length() != 0){
                 this.requestString += requestLine + "\n";
             }
 
             // Find HTTP Path
-            Pattern pattern = Pattern.compile("^(?<request>(GET|POST)) (?<path>.+) HTTP/(?<version>[0-9\\.]+)$", Pattern.MULTILINE);
+            Pattern pattern = Pattern.compile("^(?<request>(GET|POST)) (?<path>.+) HTTP/(?<version>[0-9.]+)$", Pattern.MULTILINE);
             Matcher matcher = pattern.matcher(this.requestString);
 
             while(matcher.find()){
@@ -117,7 +117,7 @@ public class Worker extends Thread{
             }
 
             // Call user-made handler
-            String output = new String();
+            String output = "";
             try {
                 output = endpointList.get(this.requestType + this.requestPath).apply(this.requestString);
 
@@ -126,7 +126,6 @@ public class Worker extends Thread{
                 output = "404";
 
             } catch(Exception e){
-                System.out.println(e);
                 e.printStackTrace();
             }
 

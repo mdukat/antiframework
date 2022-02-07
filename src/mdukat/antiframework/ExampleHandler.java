@@ -6,6 +6,9 @@ Example Handler
 
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ExampleHandler extends Worker {
     public ExampleHandler(){
         super();
@@ -13,6 +16,8 @@ public class ExampleHandler extends Worker {
         addEndpoint("GET", "/useragent", this::getUserAgentEndpoint);
         addEndpoint("GET", "/debug", this::debugEndpoint);
         addEndpoint("POST", "/debug", this::debugEndpoint);
+        addEndpoint("GET", "/htmltest", this::htmlTest);
+        addEndpoint("GET", "/htmlerror", this::htmlError);
     }
 
     // Returns static "Test123"
@@ -26,6 +31,7 @@ public class ExampleHandler extends Worker {
         return getHeaderValue("User-Agent");
     }
 
+    // Debug endpoint with some data (very developer, much data)
     String debugEndpoint(String input){
         System.out.println("Called debug endpoint");
         String output = "Debug endpoint\n";
@@ -38,5 +44,24 @@ public class ExampleHandler extends Worker {
             output += "Has arguments: " + getRequestArguments().toString() + "\n";
 
         return output;
+    }
+
+    // Builds example HTML file on the fly
+    String htmlTest(String input){
+        System.out.println("Called htmltest");
+        Map<String, String> htmlThings = new HashMap<>();
+
+        htmlThings.put("useragent", getHeaderValue("User-Agent"));
+
+        HTMLBuilder html = new HTMLBuilder("examplefiles/test.html", htmlThings);
+        return html.getHTML();
+    }
+
+    // Throw HTML file error
+    String htmlError(String input){
+        System.out.println("Called htmlerror");
+        Map<String, String> htmlThings = new HashMap<>();
+        HTMLBuilder html = new HTMLBuilder("this_file_does_not_exist.html", htmlThings);
+        return html.getHTML();
     }
 }
