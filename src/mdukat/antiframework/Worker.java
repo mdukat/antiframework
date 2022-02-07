@@ -129,11 +129,16 @@ public class Worker extends Thread{
                 e.printStackTrace();
             }
 
-            // TODO better response
-            if(output != "404")
-                output = "HTTP/1.1 200 OK\n\n" + output;
-            else
-                output = "HTTP/1.1 404 NOT FOUND\n\n";
+            if(output != "404") {
+                output = "HTTP/1.1 200 OK\n" +
+                        "Content-Type: text/html;charset=UTF-8\n" +
+                        Server.getServerHeader() + "\n" +
+                        "\n" + output;
+            }else {
+                output = "HTTP/1.1 404 NOT FOUND\n" +
+                        Server.getServerHeader() + "\n" +
+                        "\n";
+            }
 
             // Send response
             out.println(output);

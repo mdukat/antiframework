@@ -30,4 +30,8 @@ public class Server {
             e.printStackTrace();
         }
     }
+
+    public static String getServerHeader(){
+        return "Server: antiframework/dev";
+    }
 }
