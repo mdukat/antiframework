@@ -7,12 +7,25 @@ import java.util.Scanner;
 
 public class HTMLBuilder {
 
-    private final String templateFilePath;
+    private String templateFilePath;
     private String templateFile;
+
+    public HTMLBuilder(String templateFilePath){
+        readHTMLFile(templateFilePath);
+    }
 
     // Reads template file, compiles it, or builds error message
     public HTMLBuilder(String templateFilePath, Map<String, String> parseKeys){
 
+        readHTMLFile(templateFilePath);
+
+        // For every key, replace value
+        for(Map.Entry<String, String> entry : parseKeys.entrySet()){
+            this.templateFile = this.templateFile.replaceAll("\\{\\{" + entry.getKey() + "}}", entry.getValue());
+        }
+    }
+
+    private void readHTMLFile(String templateFilePath){
         this.templateFilePath = templateFilePath;
 
         Scanner in;
@@ -32,11 +45,6 @@ public class HTMLBuilder {
         in.close();
 
         this.templateFile = sb.toString();
-
-        // For every key, replace value
-        for(Map.Entry<String, String> entry : parseKeys.entrySet()){
-            this.templateFile = this.templateFile.replaceAll("\\{" + entry.getKey() + "}", entry.getValue());
-        }
     }
 
     // Returns raw compiled HTML (or error message)

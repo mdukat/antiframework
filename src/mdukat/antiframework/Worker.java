@@ -30,11 +30,13 @@ public class Worker extends Thread{
     private String requestVersion;
     private final Map<String, String> requestArguments;
     private final Map<String, Function<String, String>> endpointList;
+    private final Map<String, String> endpointRedirectList;
 
     public Worker() {
         super();
         this.endpointList = new HashMap<>();
         this.requestArguments = new HashMap<>();
+        this.endpointRedirectList = new HashMap<>();
     }
 
     public void setClientSocket(Socket clientSocket){
@@ -43,6 +45,10 @@ public class Worker extends Thread{
 
     public void addEndpoint(String requestType, String requestPath, Function<String, String> endpoint){
         this.endpointList.put(requestType+requestPath, endpoint);
+    }
+
+    public void addEndpointRedirect(String requestType, String requestPath, String destination){
+        this.endpointRedirectList.put(requestType+requestPath, destination);
     }
 
     public void run(){
@@ -116,25 +122,44 @@ public class Worker extends Thread{
                 }
             }
 
-            // Call user-made handler
+            // Handle user endpoints
             String output = "";
-            try {
-                output = endpointList.get(this.requestType + this.requestPath).apply(this.requestString);
+            boolean outputRedirect = false;
+            boolean outputDocument = false;
+            boolean outputOk = false;
 
-            } catch(java.lang.NullPointerException e){
-                // TODO probably do it better
-                output = "404";
-
-            } catch(Exception e){
-                e.printStackTrace();
+            // Redirect endpoint call
+            {
+                String endpointRedirectBuffer = endpointRedirectList.get(this.requestType + this.requestPath);
+                if (endpointRedirectBuffer != null) {
+                    output = endpointRedirectBuffer;
+                    outputOk = true;
+                    outputRedirect = true;
+                }
             }
 
-            if(output != "404") {
+            // Document endpoint call
+            {
+                Function<String, String> endpointFunctionBuffer = endpointList.get(this.requestType + this.requestPath);
+                if (endpointFunctionBuffer != null) {
+                    output = endpointFunctionBuffer.apply(this.requestString);
+                    outputOk = true;
+                    outputDocument = true;
+                }
+            }
+
+            if(outputOk && outputDocument) {
                 output = "HTTP/1.1 200 OK\n" +
                         "Content-Type: text/html;charset=UTF-8\n" +
                         Server.getServerHeader() + "\n" +
                         "\n" + output;
-            }else {
+            }
+            if(outputOk && outputRedirect) {
+                output = "HTTP/1.1 301 Moved Permanently\n" +
+                        "Location: " + output + "\n" +
+                        Server.getServerHeader() + "\n\n";
+            }
+            if(!outputOk){
                 output = "HTTP/1.1 404 NOT FOUND\n" +
                         Server.getServerHeader() + "\n" +
                         "\n";

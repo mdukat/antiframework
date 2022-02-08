@@ -18,6 +18,8 @@ public class ExampleHandler extends Worker {
         addEndpoint("POST", "/debug", this::debugEndpoint);
         addEndpoint("GET", "/htmltest", this::htmlTest);
         addEndpoint("GET", "/htmlerror", this::htmlError);
+        addEndpoint("GET", "/htmlstatic", this::htmlStatic);
+        addEndpointRedirect("GET", "/redirect", "/debug");
     }
 
     // Returns static "Test123"
@@ -34,7 +36,7 @@ public class ExampleHandler extends Worker {
     // Debug endpoint with some data (very developer, much data)
     String debugEndpoint(String input){
         System.out.println("Called debug endpoint");
-        String output = "Debug endpoint\n";
+        String output = "Debug endpoint\r\n";
         output += "User-Agent: " + getHeaderValue("User-Agent") + "\n"
             + "Request path: " + getRequestPath() + "\n"
             + "Request type: " + getRequestType() + "\n"
@@ -62,6 +64,13 @@ public class ExampleHandler extends Worker {
         System.out.println("Called htmlerror");
         Map<String, String> htmlThings = new HashMap<>();
         HTMLBuilder html = new HTMLBuilder("this_file_does_not_exist.html", htmlThings);
+        return html.getHTML();
+    }
+
+    // Show static website
+    String htmlStatic(String input){
+        System.out.println("Called htmlstatic");
+        HTMLBuilder html = new HTMLBuilder("examplefiles/static.html");
         return html.getHTML();
     }
 }
