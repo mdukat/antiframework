@@ -13,9 +13,6 @@ Raw TCP sockets, some regex, and OOP magic.
 ## Where to start
 Check out [HOWTO.md](HOWTO.md) document. You may also want to check documentation at [DOCS.md](DOCS.md).
 
-## Known issues
- - Server gets 100% CPU usage while waiting for connection
-
 ## FAQ
 ### Is it secure?
 No.

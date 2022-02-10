@@ -61,7 +61,16 @@ public class Worker extends Thread{
             // Parse HTTP request
 
             // Read lines
-            while(!in.ready()){} // Wait for being ready
+            long inputReadyTimeoutStart = System.currentTimeMillis();
+            long inputReadyTimeout = 1000; // 1000ms = 1 second
+
+            // Wait for readiness of input; else timeout
+            while(!in.ready()){
+                if(System.currentTimeMillis() - inputReadyTimeoutStart > inputReadyTimeout){
+                    return;
+                }
+            }
+
             String requestLine;
             while((requestLine = in.readLine()) != null && requestLine.length() != 0){
                 this.requestString += requestLine + "\n";
@@ -171,10 +180,17 @@ public class Worker extends Thread{
             // Close connection
             clientSocket.close();
 
+            // Close buffered input
+            in.close();
+
         } catch(Exception e){
             System.out.println(e);
             e.printStackTrace();
         }
+
+        // Kill thread
+        this.interrupt();
+        return;
     }
 
     // example: getHeaderValue("User-Agent")
