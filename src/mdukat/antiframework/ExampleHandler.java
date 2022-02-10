@@ -20,6 +20,10 @@ public class ExampleHandler extends Worker {
         addEndpoint("GET", "/htmlerror", this::htmlError);
         addEndpoint("GET", "/htmlstatic", this::htmlStatic);
         addEndpointRedirect("GET", "/redirect", "/debug");
+        addEndpoint("GET", "/setcookie", this::setCookie);
+        addEndpoint("GET", "/listcookie", this::listCookie);
+        addEndpoint("GET", "/setspecificcookie", this::setSpecificCookie);
+        addEndpoint("GET", "/hasantiframecookie", this::hasAntiframeCookie);
     }
 
     // Returns static "Test123"
@@ -72,5 +76,43 @@ public class ExampleHandler extends Worker {
         System.out.println("Called htmlstatic");
         HTMLBuilder html = new HTMLBuilder("examplefiles/static.html");
         return html.getHTML();
+    }
+
+    // Set antiframecookie=somefunnyvalue cookie
+    String setCookie(String input){
+        System.out.println("Called setcookie");
+        addCookie("antiframecookie", "somefunnyvalue");
+        return "Cookie should be set";
+    }
+
+    String hasAntiframeCookie(String input){
+        System.out.println("Called hasantiframecookie");
+        String value = getCookie("antiframecookie");
+        if(value != null)
+            return value;
+        else
+            return "Cookie not found";
+    }
+
+    // List all cookies sent to server
+    String listCookie(String input){
+        System.out.println("Called listcookie");
+        if(getAllCookies() != null)
+            return getAllCookies().toString();
+        else
+            return "No cookies found";
+    }
+
+    // Set specific cookie with GET arguments
+    String setSpecificCookie(String input){
+        System.out.println("Called setspecificcookie");
+        if(!hasArguments())
+            return "No arguments. Arguments for this endpoint are going to be sent back as cookies.";
+
+        for(Map.Entry<String, String> argument : getRequestArguments().entrySet()){
+            addCookie(argument.getKey(), argument.getValue());
+        }
+
+        return "Cookies sent back: " + getRequestArguments().toString();
     }
 }

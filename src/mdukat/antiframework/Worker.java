@@ -31,12 +31,18 @@ public class Worker extends Thread{
     private final Map<String, String> requestArguments;
     private final Map<String, Function<String, String>> endpointList;
     private final Map<String, String> endpointRedirectList;
+    private boolean hasCookieToSend = false;
+    private boolean hasReceivedCookie = false;
+    private final Map<String, String> cookiesToSend;
+    private final Map<String, String> cookiesReceived;
 
     public Worker() {
         super();
         this.endpointList = new HashMap<>();
         this.requestArguments = new HashMap<>();
         this.endpointRedirectList = new HashMap<>();
+        this.cookiesToSend = new HashMap<>();
+        this.cookiesReceived = new HashMap<>();
     }
 
     public void setClientSocket(Socket clientSocket){
@@ -49,6 +55,27 @@ public class Worker extends Thread{
 
     public void addEndpointRedirect(String requestType, String requestPath, String destination){
         this.endpointRedirectList.put(requestType+requestPath, destination);
+    }
+
+    public void addCookie(String cookieKey, String cookieValue){
+        if(!this.hasCookieToSend)
+            this.hasCookieToSend = true;
+        this.cookiesToSend.put(cookieKey, cookieValue);
+        // TODO expiration, max-age, domain, path, etc...
+    }
+
+    // Returns cookie value, or null if didn't find one
+    public String getCookie(String cookieKey){
+        if(!this.hasReceivedCookie)
+            return null;
+        // Map returns null if it can't find the cookie, so everything works
+        return this.cookiesReceived.get(cookieKey);
+    }
+
+    public Map<String, String> getAllCookies(){
+        if(!this.hasReceivedCookie)
+            return null;
+        return this.cookiesReceived;
     }
 
     public void run(){
@@ -86,6 +113,23 @@ public class Worker extends Thread{
                     this.requestType = matcher.group("request");
                     this.requestVersion = matcher.group("version");
                     break;
+                }
+            }
+
+            // Find cookies
+            String cookieHeaderReceived = getHeaderValue("Cookie");
+            if(cookieHeaderReceived != null) {
+                //Pattern patternCookie = Pattern.compile("[ ]*(?<cookieKey>[^;=]+)=(?<cookieValue>[^;=]+)");
+                Pattern patternCookie = Pattern.compile("(?<cookieKey>[^;= ]+)=(?<cookieValue>[^;=]+)");
+                Matcher matcherCookie = patternCookie.matcher(cookieHeaderReceived);
+
+                while (matcherCookie.find()) {
+                    if(!hasReceivedCookie)
+                        hasReceivedCookie = true;
+                    cookiesReceived.put(
+                            matcherCookie.group("cookieKey"),
+                            matcherCookie.group("cookieValue")
+                    );
                 }
             }
 
@@ -133,17 +177,18 @@ public class Worker extends Thread{
 
             // Handle user endpoints
             String output = "";
-            boolean outputRedirect = false;
-            boolean outputDocument = false;
-            boolean outputOk = false;
+            String outputDocument = "";
+            boolean isOutputRedirect = false;
+            boolean isOutputDocument = false;
+            boolean isOutputOk = false;
 
             // Redirect endpoint call
             {
                 String endpointRedirectBuffer = endpointRedirectList.get(this.requestType + this.requestPath);
                 if (endpointRedirectBuffer != null) {
-                    output = endpointRedirectBuffer;
-                    outputOk = true;
-                    outputRedirect = true;
+                    outputDocument = endpointRedirectBuffer;
+                    isOutputOk = true;
+                    isOutputRedirect = true;
                 }
             }
 
@@ -151,27 +196,46 @@ public class Worker extends Thread{
             {
                 Function<String, String> endpointFunctionBuffer = endpointList.get(this.requestType + this.requestPath);
                 if (endpointFunctionBuffer != null) {
-                    output = endpointFunctionBuffer.apply(this.requestString);
-                    outputOk = true;
-                    outputDocument = true;
+                    outputDocument = endpointFunctionBuffer.apply(this.requestString);
+                    isOutputOk = true;
+                    isOutputDocument = true;
                 }
             }
 
-            if(outputOk && outputDocument) {
-                output = "HTTP/1.1 200 OK\n" +
-                        "Content-Type: text/html;charset=UTF-8\n" +
-                        Server.getServerHeader() + "\n" +
-                        "\n" + output;
+            // HTTP Response Status
+            if(isOutputOk && isOutputDocument) {
+                output = "HTTP/1.1 200 OK\n";
             }
-            if(outputOk && outputRedirect) {
-                output = "HTTP/1.1 301 Moved Permanently\n" +
-                        "Location: " + output + "\n" +
-                        Server.getServerHeader() + "\n\n";
+            if(isOutputOk && isOutputRedirect) {
+                output = "HTTP/1.1 301 Moved Permanently\n";
             }
-            if(!outputOk){
-                output = "HTTP/1.1 404 NOT FOUND\n" +
-                        Server.getServerHeader() + "\n" +
-                        "\n";
+            if(!isOutputOk){
+                output = "HTTP/1.1 404 NOT FOUND\n";
+            }
+
+            // HTTP Response Headers
+            if(isOutputOk && isOutputDocument) {
+                output += "Content-Type: text/html;charset=UTF-8\n" +
+                        Server.getServerHeader() + "\n";
+            }
+            if(isOutputOk && isOutputRedirect) {
+                output += "Location: " + output + "\n" +
+                        Server.getServerHeader() + "\n";
+            }
+            if(!isOutputOk){
+                output += Server.getServerHeader() + "\n";
+            }
+
+            // Cookie?
+            if(hasCookieToSend){
+                for(Map.Entry<String, String> cookie : this.cookiesToSend.entrySet()){
+                    output += "Set-Cookie: " + cookie.getKey() + "=" + cookie.getValue() + "\n";
+                }
+            }
+
+            // HTTP Response Data
+            if(isOutputOk){
+                output += "\n" + outputDocument;
             }
 
             // Send response
@@ -203,7 +267,7 @@ public class Worker extends Thread{
                 return matcher.group("value");
             }
         }
-        return "";
+        return null;
     }
 
     public String getRequestVersion(){

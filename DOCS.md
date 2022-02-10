@@ -43,6 +43,15 @@ Map<String, String> getRequestArguments()
 
 // Check if request has arguments
 boolean hasArguments()
+
+// Add cookie
+void addCookie(String cookieKey, String cookieValue)
+
+// Get cookie
+String getCookie(String cookieKey)
+
+// Get all cookies
+Map<String, String> getAllCookies()
 ```
 
 ## HTMLBuilder class
